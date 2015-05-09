@@ -24,6 +24,8 @@ import android.util.Log;
  *
  */
 class FrameworkClassLoader extends ClassLoader {
+	
+	private static final String TAG = "FrameworkClassLoader";
 	private String plugId;
 	private String actName;
 
@@ -39,13 +41,13 @@ class FrameworkClassLoader extends ClassLoader {
 
 	protected Class<?> loadClass(String className, boolean resolv)
 			throws ClassNotFoundException {
-		Log.i("cl", "loadClass: " + className);
+		Log.d(TAG, "loadClass: " + className);
 		if (plugId != null) {
 			String pluginId = plugId;
 
 			PlugInfo plugin = PluginManager.getInstance().getPluginById(
 					pluginId);
-			Log.i("cl", "plugin = " + plugin);
+			Log.d(TAG, "plugin = " + plugin);
 			if (plugin != null) {
 				try {
 					if (className.equals(ActivityOverider.targetClassName)) {
@@ -58,6 +60,7 @@ class FrameworkClassLoader extends ClassLoader {
 					}
 				} catch (ClassNotFoundException e) {
 					e.printStackTrace();
+					throw new PluginException(TAG+".loadClass is errro", e);
 				}
 			}
 		}

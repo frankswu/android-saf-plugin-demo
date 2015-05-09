@@ -17,12 +17,16 @@ package androidx.pluginmgr;
 
 import java.lang.reflect.Field;
 
+import android.util.Log;
+
 /**
  * 反射工具类
  * @author HouKangxi
  *
  */
 public class ReflectionUtils {
+
+	private static final String TAG = "ReflectionUtils";
 
 	public static <T> T getFieldValue(Object obj, String fieldName)
 			throws IllegalAccessException, IllegalArgumentException,
@@ -110,6 +114,9 @@ public class ReflectionUtils {
 			}
 		} catch (NoSuchFieldException e) {
 			noSuchFieldExceptionOccor = e;
+			Log.d(TAG, "getField_.isError=targetClass[" + targetClass.getName()
+					+ "].getDeclaredField(fieldName[" + fieldName
+					+ "])");
 		}
 		if (noSuchFieldExceptionOccor != null) {
 			if (resolveParent) {
@@ -124,7 +131,9 @@ public class ReflectionUtils {
 						return rsField = field;
 					} catch (NoSuchFieldException e) {
 						if (targetClass.getSuperclass() == null) {
-							throw e;
+							throw new PluginException(TAG+".targetClass.getSuperclass() == null&&targetClass[" + targetClass.getName()
+									+ "].getDeclaredField(fieldName[" + fieldName
+									+ "])", e);
 						}
 					}
 				}

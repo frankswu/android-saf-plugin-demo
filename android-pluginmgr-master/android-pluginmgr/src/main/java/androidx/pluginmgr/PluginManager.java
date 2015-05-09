@@ -18,6 +18,7 @@ package androidx.pluginmgr;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileNotFoundException;
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,7 +41,7 @@ import android.util.Log;
  * @author HouKangxi
  */
 public class PluginManager implements FileFilter {
-	private static final String tag = "plugmgr";
+	private static final String TAG = "plugmgr";
 	
 	private static final PluginManager instance = new PluginManager();
 
@@ -87,21 +88,35 @@ public class PluginManager implements FileFilter {
 	}
 
 	public boolean startMainActivity(Context context, String pkgOrId) {
-		Log.d(tag, "startMainActivity by:" + pkgOrId);
-		PlugInfo plug = preparePlugForStartActivity(context, pkgOrId);
+		Log.d(TAG, "startMainActivity by:" + pkgOrId);
+		final PlugInfo plug = preparePlugForStartActivity(context, pkgOrId);
+		Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+			
+			@Override
+			public void uncaughtException(Thread t, Throwable e) {
+				LPluginBugManager.callAllBugListener(new LPluginBug(t,e,plug));
+			}
+		});
+		String detailMessage;
 		if (frameworkClassLoader == null) {
-			Log.e(tag, "startMainActivity: frameworkClassLoader == null!");
-			return false;
+			detailMessage = "startMainActivity: frameworkClassLoader == null!";
+			Log.e(TAG, detailMessage);
+			throw new PluginException(detailMessage);
+//			return false;
 		}
 		if (plug.getMainActivity() == null) {
-			Log.e(tag, "startMainActivity: plug.getMainActivity() == null!");
-			return false;
+			detailMessage = "startMainActivity: plug.getMainActivity() == null!";
+			Log.e(TAG, detailMessage);
+			throw new PluginException(detailMessage);
+//			return false;
 		}
 		if (plug.getMainActivity().activityInfo == null) {
-			Log.e(tag,
-					"startMainActivity: plug.getMainActivity().activityInfo == null!");
-			return false;
+			detailMessage = "startMainActivity: plug.getMainActivity().activityInfo == null!"; 
+			Log.e(TAG, detailMessage);
+			throw new PluginException(detailMessage);
+//			return false;
 		}
+		
 		String className = frameworkClassLoader.newActivityClassName(
 				plug.getId(), plug.getMainActivity().activityInfo.name);
 		context.startActivity(new Intent().setComponent(new ComponentName(
@@ -150,7 +165,7 @@ public class PluginManager implements FileFilter {
 		PlugInfo plug = preparePlugForStartActivity(context, plugIdOrPkg);
 		String className = frameworkClassLoader.newActivityClassName(
 				plug.getId(), actName);
-		Log.i(tag, "performStartActivity: " + actName);
+		Log.d(TAG, "performStartActivity: " + actName);
 		ComponentName comp = new ComponentName(context, className);
 		intent.setAction(null);
 		intent.setComponent(comp);
@@ -158,7 +173,7 @@ public class PluginManager implements FileFilter {
 
 
 	private void init(Context ctx) {
-		Log.i(tag, "init()...");
+		Log.d(TAG, "init()...");
 		context = ctx;
 		File optimizedDexPath = ctx.getDir("plugsout", Context.MODE_PRIVATE);
 		if (!optimizedDexPath.exists()) {
@@ -179,6 +194,7 @@ public class PluginManager implements FileFilter {
 					frameworkClassLoader, true);
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new PluginException("init pluginManager is error", e);
 		}
 		hasInit = true;
 	}
@@ -228,6 +244,7 @@ public class PluginManager implements FileFilter {
 							.invoke(context, pl.getApplication());
 				} catch (Exception e) {
 					e.printStackTrace();
+					throw new PluginException("uninstallPlugin by pluginManager is error", e);
 				}
 			}
 		}
@@ -271,9 +288,10 @@ public class PluginManager implements FileFilter {
 			throws Exception {
 		checkInit();
 		if (pluginSrcDirFile == null || !pluginSrcDirFile.exists()) {
-			Log.e(tag, "invalidate plugin file or Directory :"
-					+ pluginSrcDirFile);
-			return null;
+			
+			Log.e(TAG, "invalidate plugin file or Directory :" + pluginSrcDirFile);
+			throw new PluginException("invalidate plugin file or Directory :" + pluginSrcDirFile);
+//			return null;
 		}
 		if (pluginSrcDirFile.isFile()) {
 			// 如果是文件则尝试加载单个插件，暂不检查文件类型，除apk外，以后可能支持加载其他类型文件,如jar
@@ -372,12 +390,13 @@ public class PluginManager implements FileFilter {
 			info.setResources(res);
 		} catch (Exception e) {
 			e.printStackTrace();
+			throw new PluginException("pulginManager.buildPlugInfo is error :", e);
 		}
 		if (actFrom != null) {
 			initPluginApplication(info, actFrom, true);
 		}
 		// createPluginActivityProxyDexes(info);
-		Log.i(tag, "buildPlugInfo: " + info);
+		Log.d(TAG, "buildPlugInfo: " + info);
 		return info;
 	}
 
@@ -402,18 +421,20 @@ public class PluginManager implements FileFilter {
 
 	private void initPluginApplication(final PlugInfo plugin, Activity actFrom, boolean onLoad) throws Exception {
 		if (!onLoad && plugin.getApplication() != null) {
+			Log.e(TAG, "!onLoad && plugin.getApplication() != null");
 			return;
 		}
 		final String className = plugin.getPackageInfo().applicationInfo.name;
 		if (className == null) {
 			if (onLoad) {
+				Log.e(TAG, "plugin.getPackageInfo().applicationInfo.name==null && onLoad==true");
 				return;
 			}
 			Application application = new Application();
 			setApplicationBase(plugin, application);
 			return;
 		}
-		Log.d(tag, plugin.getId() + ", ApplicationClassName = " + className);
+		Log.d(TAG, plugin.getId() + ", ApplicationClassName = " + className);
 		
 		Runnable setApplicationTask = new Runnable() {
 			public void run() {
@@ -426,7 +447,8 @@ public class PluginManager implements FileFilter {
 					// invoke plugin application's onCreate()
 					application.onCreate();
 				} catch (Throwable e) {
-					Log.e(tag, Log.getStackTraceString(e));
+					Log.e(TAG, Log.getStackTraceString(e));
+					throw new PluginException("PluginManager.initPluginApplication is error", e);
 				}
 			}
 		};
@@ -446,6 +468,7 @@ public class PluginManager implements FileFilter {
 		synchronized (plugin) {
 			if (plugin.getApplication() != null) {
 				// set plugin's Application only once
+				Log.d(TAG, "plugin.getApplication() != null");
 				return;
 			}
 			plugin.setApplication(application);

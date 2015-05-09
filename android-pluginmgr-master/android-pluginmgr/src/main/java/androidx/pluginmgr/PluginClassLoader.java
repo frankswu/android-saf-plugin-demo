@@ -29,6 +29,7 @@ import dalvik.system.DexClassLoader;
  * 
  */
 class PluginClassLoader extends DexClassLoader {
+	private static final String TAG = "PluginClassLoader";
 	private final String tag;
 	private final PlugInfo thisPlugin;
 	private final String optimizedDirectory;
@@ -45,7 +46,7 @@ class PluginClassLoader extends DexClassLoader {
 		this.libraryPath = plugin.getPackageInfo().applicationInfo.nativeLibraryDir;
 		this.optimizedDirectory = optimizedDir;
 		tag = "PluginClassLoader( " + plugin.getPackageInfo().packageName + " )";
-		Log.i(tag, "libraryPath = "+libraryPath);
+		Log.d(tag, "libraryPath = "+libraryPath);
 	}
 
 	Class<?> loadActivityClass(final String actClassName) throws ClassNotFoundException {
@@ -96,7 +97,8 @@ class PluginClassLoader extends DexClassLoader {
 			}
 		} catch (ClassNotFoundException e) {
 			if(throwEx){
-				throw e;
+				throw new PluginException(TAG+"." +tag
+						+ ".findByParent is error", e);
 			}
 		}
     	return c;
@@ -111,6 +113,8 @@ class PluginClassLoader extends DexClassLoader {
 					try {
 						c = findClass(name);
 					} catch (ClassNotFoundException e) {
+						e.printStackTrace();
+						throw new PluginException(TAG+"." +tag + ".loadClass is error", e);						
 					}
 					if (c == null) {
 						c = findByParent(name, true);

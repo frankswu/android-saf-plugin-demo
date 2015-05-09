@@ -206,7 +206,7 @@ public class ActivityOverider {
 		// Log.d(tag + ":createProxyDex", "plugin=" + plugin + "\n, activity="
 		// + activity);
 		if (lazy && saveDir.exists()) {
-			// Log.d(tag, "dex alreay exists: " + saveDir);
+			 Log.d(tag, "dex alreay exists: " + saveDir);
 			// 已经存在就不创建了，直接返回
 			return;
 		}
@@ -221,7 +221,7 @@ public class ActivityOverider {
 	}
 	public static Object[] overrideAttachBaseContext(final String pluginId,final Activity fromAct,Context base){
 	
-		Log.i(tag, "overrideAttachBaseContext: pluginId="+pluginId+", activity="+fromAct.getClass().getSuperclass().getName()
+		Log.d(tag, "overrideAttachBaseContext: pluginId="+pluginId+", activity="+fromAct.getClass().getSuperclass().getName()
 				);
 		// 
 		PlugInfo plugin = PluginManager.getInstance().getPluginById(pluginId);
@@ -231,6 +231,7 @@ public class ActivityOverider {
 						null);
 			} catch (Exception e) {
 				Log.e(tag, Log.getStackTraceString(e));
+				throw new PluginException(tag+".overrideAttachBaseContext is error", e);
 			}
 		}
 		PluginActivityWrapper actWrapper = new PluginActivityWrapper(base, plugin.appWrapper, plugin);
@@ -250,7 +251,8 @@ public class ActivityOverider {
 			field_mActivityInfo.setAccessible(true);
 		}  catch (Exception e) {
 			Log.e(tag, Log.getStackTraceString(e));
-			return;
+			throw new PluginException(tag+".changeActivityInfo is error", e);
+//			return;
 		}
 		PluginManager con = PluginManager.getInstance();
 		PlugInfo plugin = con.getPluginByPackageName(activity.getPackageName());
@@ -261,9 +263,10 @@ public class ActivityOverider {
 			field_mActivityInfo.set(activity, actInfo);
 		} catch (Exception e) {
 			Log.e(tag, Log.getStackTraceString(e));
+			throw new PluginException(tag+".changeActivityInfo is error", e);
 		}
 		
-		Log.i(tag, "changeActivityInfo->changeTheme: "+" theme = "+actInfo.getThemeResource()
+		Log.d(tag, "changeActivityInfo->changeTheme: "+" theme = "+actInfo.getThemeResource()
 				+", icon = "+actInfo.getIconResource()+", logo = "+actInfo.logo);
 	}
 	
@@ -314,6 +317,7 @@ public class ActivityOverider {
 			applicationField.set(fromAct, plugin.getApplication());
 		}  catch (Exception e) {
 			e.printStackTrace();
+			throw new PluginException(tag+".callback_onCreate is error", e);
 		}
 		{
 
@@ -329,6 +333,7 @@ public class ActivityOverider {
 					hasNotSetTheme = mTheme.get(fromAct) == null;
 				} catch (Exception e) {
 					e.printStackTrace();
+					throw new PluginException(tag+".callback_onCreate is error", e);
 				}
 				if (hasNotSetTheme) {
 					changeActivityInfo(fromAct);
@@ -348,6 +353,7 @@ public class ActivityOverider {
 				}
 			} catch (Exception e) {
 				Log.e(tag, Log.getStackTraceString(e));
+				throw new PluginException(tag+".callback_onCreate is error", e);
 			}
 		}
 		// invoke callback
