@@ -3,18 +3,12 @@ package androidx.plmgrdemo;
 import java.io.File;
 import java.util.Collection;
 
-import com.lody.plugin.LPluginOpener;
-import com.lody.plugin.api.LPluginBug;
-import com.lody.plugin.api.LPluginBugListener;
-import com.lody.plugin.manager.LPluginBugManager;
-
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Environment;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;

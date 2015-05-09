@@ -11,7 +11,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 import cn.salesuite.saf.eventbus.Subscribe;
 import cn.salesuite.saf.inject.Injector;
 import cn.salesuite.saf.inject.annotation.InjectExtra;
@@ -31,10 +30,13 @@ public class TestFragmentActivity extends BaseFragmentActivity implements
 
 	public ViewHolder viewHolder;
 
+	@InjectExtra
+	public String dl_extra;
+	
 	public class ViewHolder {
 		
-		@InjectExtra(key = "dl_extra")
-		public String testStr;
+		@InjectExtra
+		public String dl_extra;
 		
 		@InjectViews(ids = {R.id.start_plugin_b,R.id.show_fragment,R.id.button1})
 		public Button[] buttons;
@@ -101,12 +103,13 @@ public class TestFragmentActivity extends BaseFragmentActivity implements
 		View view = LayoutInflater.from(mContext).inflate(R.layout.test, null);
 		setContentView(view);
 		
+		Injector.injectInto(this);
 		StringBuilder txtTestInfo = new StringBuilder();
 		L.d(TAG + "this.getClass=", this.getClass().getName().toString());
 		L.d(TAG + "super.mContext=", super.mContext.getClass().getName().toString());
 		viewHolder = new ViewHolder(view);
 		// FIXME 此注解失效？原始没有实现
-		txtTestInfo.append("\n@InjectExtra=" + viewHolder.testStr);
+		txtTestInfo.append("\n@InjectExtra=" + viewHolder.dl_extra);
 		for (Button button : viewHolder.buttons) {
 			txtTestInfo.append("\nbutton[]="+button.getText().toString());
 		}

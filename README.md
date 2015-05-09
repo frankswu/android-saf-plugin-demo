@@ -9,6 +9,7 @@
 
 [android-pluginmgr](https://github.com/houkx/android-pluginmgr)
 
+目前此插件项目支持SAF框架，但是不能使用SAF框架中的基类如SAFapp等，可能导致和宿主基类冲突（同名，但是不属于一个Classload）不能识别。建议可以在plugin项目中自己实现基类的所有功能。
 由于此plugin实现的原理是通过ProxyActivity继承pluginApk中的Activity来实现的，所以plugin中的Activity如果使用注解的话，可能会失效。
 
 支持特性如下：
