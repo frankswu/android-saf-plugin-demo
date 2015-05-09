@@ -187,8 +187,7 @@ public class PluginManager implements FileFilter {
 		try {
 			Object mPackageInfo = ReflectionUtils.getFieldValue(ctx,
 					"mBase.mPackageInfo", true);
-			frameworkClassLoader = new FrameworkClassLoader(
-					ctx.getClassLoader());
+			frameworkClassLoader = new FrameworkClassLoader(ctx.getClassLoader());
 			// set Application's classLoader to FrameworkClassLoader
 			ReflectionUtils.setFieldValue(mPackageInfo, "mClassLoader",
 					frameworkClassLoader, true);
@@ -295,7 +294,14 @@ public class PluginManager implements FileFilter {
 		}
 		if (pluginSrcDirFile.isFile()) {
 			// 如果是文件则尝试加载单个插件，暂不检查文件类型，除apk外，以后可能支持加载其他类型文件,如jar
-			PlugInfo one = loadPluginWithId(pluginSrcDirFile, null, null);
+			final PlugInfo one = loadPluginWithId(pluginSrcDirFile, null, null);
+			Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+				
+				@Override
+				public void uncaughtException(Thread t, Throwable e) {
+					LPluginBugManager.callAllBugListener(new LPluginBug(t,e,one));
+				}
+			});		
 			return Collections.singletonList(one);
 		}
 		// clear all first
@@ -309,7 +315,14 @@ public class PluginManager implements FileFilter {
 					+ pluginSrcDirFile);
 		}
 		for (File pluginApk : pluginApks) {
-			PlugInfo plugInfo = buildPlugInfo(pluginApk, null, null);
+			final PlugInfo plugInfo = buildPlugInfo(pluginApk, null, null);
+			Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+				
+				@Override
+				public void uncaughtException(Thread t, Throwable e) {
+					LPluginBugManager.callAllBugListener(new LPluginBug(t,e,plugInfo));
+				}
+			});		
 			if (plugInfo != null) {
 				savePluginToMap(plugInfo);
 			}
@@ -434,21 +447,25 @@ public class PluginManager implements FileFilter {
 			setApplicationBase(plugin, application);
 			return;
 		}
-		Log.d(TAG, plugin.getId() + ", ApplicationClassName = " + className);
+		Log.d(TAG, "id="+plugin.getId() + ", ApplicationClassName = " + className);
 		
 		Runnable setApplicationTask = new Runnable() {
 			public void run() {
 				ClassLoader loader = plugin.getClassLoader();
 				try {
-					Class<?> applicationClass = loader.loadClass(className);
-					Application application = (Application) applicationClass
-							.newInstance();
+					// TODO 先查找 parent的class，找不到然后再看此classLoader的
+					Class<?> applicationClass = null; 
+//							findByParent(loader, className, false);
+					if (applicationClass == null) {
+						applicationClass = loader.loadClass(className);
+					}
+					Application application = (Application) applicationClass.newInstance();
 					setApplicationBase(plugin, application);
 					// invoke plugin application's onCreate()
 					application.onCreate();
 				} catch (Throwable e) {
 					Log.e(TAG, Log.getStackTraceString(e));
-					throw new PluginException("PluginManager.initPluginApplication is error", e);
+//					throw new PluginException("PluginManager.initPluginApplication is error", e);
 				}
 			}
 		};
@@ -462,6 +479,26 @@ public class PluginManager implements FileFilter {
 		}
 	}
 
+    private  Class<?>  findByParent(ClassLoader thisClassLoader, String name,boolean throwEx)throws ClassNotFoundException{
+    	Class<?> c =null;
+    	try {
+			ClassLoader parent = thisClassLoader.getParent();
+			if (parent != null) {
+				if (parent.getClass() == FrameworkClassLoader.class) {
+					parent = parent.getParent();
+				}
+				if (parent != null) {
+					c = parent.loadClass(name);
+				}
+			}
+		} catch (ClassNotFoundException e) {
+			if(throwEx){
+				throw new PluginException(TAG+".findByParent is error", e);
+			}
+		}
+    	return c;
+    }
+	
 	private void setApplicationBase(PlugInfo plugin, Application application)
 			throws Exception {
 		

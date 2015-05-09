@@ -39,7 +39,7 @@ public class ActivityOverider {
 	/**
 	 * 自动生成的 Activity 的全类名
 	 */
-	static final String targetClassName = "androidx.pluginmgr.PluginActivity";
+	static final String TARGET_CLASS_NAME = "androidx.pluginmgr.PluginActivity";
     // ------------------- process service  ---------
 	/**
 	 * 覆盖 StarService 方法
@@ -213,7 +213,7 @@ public class ActivityOverider {
 		// Log.d(tag, "actName=" + actName + ", saveDir=" + saveDir);
 		try {
 			String pkgName = plugin.getPackageName();
-			ActivityClassGenerator.createActivityDex(activity, targetClassName,
+			ActivityClassGenerator.createActivityDex(activity, TARGET_CLASS_NAME,
 					saveDir, plugin.getId(), pkgName);
 		} catch (Throwable e) {
 			Log.e(tag, Log.getStackTraceString(e));
@@ -241,7 +241,7 @@ public class ActivityOverider {
 	private static void changeActivityInfo(Context activity){
 		final String actName = activity.getClass().getSuperclass().getName();
 		Log.d(tag, "changeActivityInfo: activity = "+activity+", class = "+actName);
-		if(!activity.getClass().getName().equals(targetClassName)){
+		if(!activity.getClass().getName().equals(TARGET_CLASS_NAME)){
 			Log.w(tag, "not a Proxy Activity ,then return.");
 			return;
 		}

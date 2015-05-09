@@ -36,7 +36,7 @@ class FrameworkClassLoader extends ClassLoader {
 	String newActivityClassName(String plugId, String actName) {
 		this.plugId = plugId;
 		this.actName = actName;
-		return ActivityOverider.targetClassName;
+		return ActivityOverider.TARGET_CLASS_NAME;
 	}
 
 	protected Class<?> loadClass(String className, boolean resolv)
@@ -50,7 +50,7 @@ class FrameworkClassLoader extends ClassLoader {
 			Log.d(TAG, "plugin = " + plugin);
 			if (plugin != null) {
 				try {
-					if (className.equals(ActivityOverider.targetClassName)) {
+					if (className.equals(ActivityOverider.TARGET_CLASS_NAME)) {
 						// Thread.dumpStack();
 						String actClassName = actName;
 						return plugin.getClassLoader().loadActivityClass(

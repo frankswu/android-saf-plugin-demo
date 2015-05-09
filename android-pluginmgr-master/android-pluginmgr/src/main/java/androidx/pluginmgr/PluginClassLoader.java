@@ -59,14 +59,15 @@ class PluginClassLoader extends DexClassLoader {
 			actLoader = new DexClassLoader(dexSavePath.getAbsolutePath(), optimizedDirectory,libraryPath, this){
 				@Override
 				protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-					Log.d("PlugActClassLoader("+ actClassName+")", "loadClass: " + name);
-					if (ActivityOverider.targetClassName.equals(name)) {
+					Log.d("PlugActClassLoader("+ actClassName+")", "loadActivityClass.loadClass: " + name);
+					if (ActivityOverider.TARGET_CLASS_NAME.equals(name)) {
 						Class<?> c = findLoadedClass(name);
 						if (c == null) {
-							Log.d("PlugActClassLoader("+ actClassName+")", "findClass");
+							Log.d("PlugActClassLoader("+ actClassName+")", "loadActivityClass.findClass:" + name);
 							c = findClass(name);
 						}
 						if (resolve) {
+							Log.d("PlugActClassLoader("+ actClassName+")", "loadActivityClass.resolveClass:" + name);
 							resolveClass(c);
 						}
 						return c;
@@ -76,7 +77,7 @@ class PluginClassLoader extends DexClassLoader {
 			};
 			proxyActivityLoaderMap.put(actClassName, actLoader);
 		}
-		return actLoader.loadClass(ActivityOverider.targetClassName);
+		return actLoader.loadClass(ActivityOverider.TARGET_CLASS_NAME);
 	}
 	
 	protected Object getClassLoadingLock(String name){
@@ -97,8 +98,7 @@ class PluginClassLoader extends DexClassLoader {
 			}
 		} catch (ClassNotFoundException e) {
 			if(throwEx){
-				throw new PluginException(TAG+"." +tag
-						+ ".findByParent is error", e);
+				throw new PluginException(TAG+"." +tag + ".findByParent is error", e);
 			}
 		}
     	return c;
@@ -107,26 +107,40 @@ class PluginClassLoader extends DexClassLoader {
 			throws ClassNotFoundException {
 		synchronized (getClassLoadingLock(name)) {
 			// First, check if the class has already been loaded
+			Log.d("PlugActClassLoader()", "loadClass.findLoadedClass:" + name);
 			Class<?> c = findLoadedClass(name);
 			if (c == null) {
-				if(name.startsWith("android.support.")){
+				if(name.startsWith("android.support.") 
+//						|| name.startsWith("cn.salesuite.saf.app.")
+						){
 					try {
+						Log.d("PlugActClassLoader()", "loadClass.(android.support).findClass:" + name);
 						c = findClass(name);
 					} catch (ClassNotFoundException e) {
 						e.printStackTrace();
-						throw new PluginException(TAG+"." +tag + ".loadClass is error", e);						
+						Log.e("PlugActClassLoader()", "loadClass.(android.support).findClass:" + name,e);
+//						throw new PluginException(TAG+"." +tag + ".loadClass is error", e);						
 					}
 					if (c == null) {
+						Log.d("PlugActClassLoader()", "loadClass.(android.support).findByParent:" + name);
 						c = findByParent(name, true);
 					}
 				}else{
+					Log.d("PlugActClassLoader()", "loadClass.(!android.support).findByParent:" + name);
 					c = findByParent(name, false);
 					if (c == null) {
-						c = findClass(name);
+						try {
+							Log.d("PlugActClassLoader()", "loadClass.(!android.support).findClass:" + name);
+							c = findClass(name);
+						} catch (Exception e) {
+							e.printStackTrace();
+							Log.e(TAG, "loadClass-findClass(" + name + ")", e);
+						}
 					}
 				}
 			}
 			if (resolve) {
+				Log.d("PlugActClassLoader()", "loadClass.resolveClass:" + name);
 				resolveClass(c);
 			}
 			return c;
